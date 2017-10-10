@@ -6,6 +6,7 @@ Created on Sat Jul 22 15:28:22 2017
 """
 
 #main
+import numpy as np
 import sys
 import glob
 import codecs
@@ -88,13 +89,16 @@ def vec_fec(doc_bag,model):
     return sen_vec
     
 def clustering(list_problem):
-    vectorizer = TfidfVectorizer(analyzer="char", tokenizer=None, preprocessor=None, stop_words=None,
+   
+   vectorizer = TfidfVectorizer(analyzer="char", tokenizer=None, preprocessor=None, stop_words=None,
                                  max_features=5000, ngram_range=(3, 8))
 
-    data_features=vectorizer.fit_transform(list_problem)
-    spectral = KMeans(n_clusters=8).fit(data_features)
-    label = spectral.fit_predict(data_features)
-    return data_features,label
+   data_features=vectorizer.fit_transform(list_problem)
+   data_features=data_features.todense()
+   data_features=data_features.tolist()
+   spectral = KMeans(n_clusters=8).fit(data_features)
+   label = spectral.fit_predict(data_features)
+   return data_features,label
 
 
 def clustering_word2vec(data_features):
@@ -107,7 +111,7 @@ def prod_output(eval_dir,out_dir,k,labels):
     doc_path=glob.glob(prblm_path + '/*')
     doc_list_name=[]
     for i in doc_path:
-        m=i.split('/')
+        m=i.split('\\')
         m=m[-1]
         doc_list_name.append(m)
     dic={}
@@ -162,6 +166,8 @@ def similarity_score(list_all, dict_features):
         doc2 = comb_list[i][1].split(",")
         vec1 = dict_features[doc1[0]]
         vec2 = dict_features[doc2[0]]
+        vec1=[vec1]
+        vec2=[vec2]
         sim = cosine_similarity(vec1, vec2)
         all_sim.append(sim)
     return comb_list, all_sim
@@ -220,17 +226,17 @@ for k,v in dict_f.iteritems():
        labels=clustering_word2vec(vectors)
        
     elif v=="gr":
-        vectors,labels=clustering(doc_list)
+       vectors,labels=clustering(doc_list)
         
     list_all=prod_output(eval_dir,out_dir,k,labels)  
-'''    
+
     dict_features={}
 
     prblm_path=os.path.join(eval_dir,k)
     doc_path=glob.glob(prblm_path + '/*')
     doc_list_name=[]
     for i in doc_path:
-        m=i.split('/')
+        m=i.split('\\')
         m=m[-1]
         doc_list_name.append(m)
     i=0    
@@ -240,7 +246,7 @@ for k,v in dict_f.iteritems():
     # similarity between documents
     list_comb, all_sim = similarity_score(list_all, dict_features)
     list_sim = write_ranking(list_comb, all_sim, out_dir,k)
-'''
+
     
         
         
