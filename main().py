@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
+#!/usr/bin/python
 """
 Created on Sat Jul 22 15:28:22 2017
 
 @author: Lucky
 """
-
 #main
+from __future__ import division, unicode_literals
+from textblob import TextBlob as tb
 import numpy as np
 import sys
 import glob
@@ -21,6 +23,19 @@ import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 from itertools import combinations
 import itertools
+import math 
+
+def tf(word, blob):
+    return blob.words.count(word) / len(blob.words)
+
+def n_containing(word, bloblist):
+    return sum(1 for blob in bloblist if word in blob.words)
+
+def idf(word, bloblist):
+    return math.log(len(bloblist) / (1 + n_containing(word, bloblist)))
+
+def tfidf(word, blob, bloblist):
+    return tf(word, blob) * idf(word, bloblist)
 
 def info(eval_dir):
     path=os.path.join(eval_dir,"info.json")
@@ -74,13 +89,18 @@ def  stopwords_r(doc,lang):
         x=x+1    
     return words        
     
-def vec_fec(doc_bag,model):
+def vec_fec(doc_bag,model,review_list):
     sen_vec=[]
-    for sen in doc_bag:
+    review_list=[tb(sentence) for sentence in review_list]
+    for sen,blob in zip(doc_bag,review_list):
         dummy_vec = np.zeros((300))
         for word in sen:
             try:
-                dummy_vec += model[word]
+               #new code added 
+                t=tfidf(word,blob,review_list)
+                x=(model[word]*t)
+                #print x
+                dummy_vec +=x
             except:
                 continue
         sen_vec.append(dummy_vec/len(sen))
@@ -111,7 +131,7 @@ def prod_output(eval_dir,out_dir,k,labels):
     doc_path=glob.glob(prblm_path + '/*')
     doc_list_name=[]
     for i in doc_path:
-        m=i.split('\\')
+        m=i.split('/')
         m=m[-1]
         doc_list_name.append(m)
     dic={}
@@ -195,8 +215,16 @@ def merge_word2_vec_Tfidf(review_en,vectors):
      
      return vectors   
      
-     
-	
+def tfidf_weight_doc(doc,review_list):
+    for i,blob in enumerate(review_new_en):
+        score={word:tfidf(word,blob,review_new_en) for word in blob.words}
+    return score    
+
+def hash_(x):
+    for doc in x:
+        for word in doc:
+            
+     	
 try:
     word = model1['bag']
     print 'using loaded model....'
@@ -205,24 +233,25 @@ except:
     
 model2 = gensim.models.word2vec.Word2Vec.load('nl-word2vec-model-300-word.bin')
 
-eval_dir="pan"
-out_dir="problem"
+eval_dir="pan17-author-clustering-test-dataset-2017-03-14"
+out_dir="problemt_2k17"
 dict_f=info(eval_dir)  
-dict_f=sortedcollections.OrderedDict(sorted(dict_f.items()))   
+dict_f=sortedcollections.OrderedDict(sorted(dict_f.items()))
+#checkpoint 1    
 for k,v in dict_f.iteritems():
     doc_list=merge_prblm_docs(eval_dir,k)
     if v=="en":
        review_en=pre_process_w2v(doc_list)
        review_en_new=stopwords_r(review_en,v)
-       vectors=vec_fec(review_en_new,model1)
-       vectors=merge_word2_vec_Tfidf(review_en,vectors)
+       vectors=vec_fec(review_en_new,model1,review_en)
+       #vectors=merge_word2_vec_Tfidf(review_en,vectors)
        labels=clustering_word2vec(vectors)
        
     elif v=="nl":
        review_nl=pre_process_w2v(doc_list)
        review_nl_new=stopwords_r(review_nl,v)
-       vectors=vec_fec(review_nl_new,model2)
-       vectors=merge_word2_vec_Tfidf(review_nl,vectors)
+       vectors=vec_fec(review_nl_new,model2,review_nl)
+       #vectors=merge_word2_vec_Tfidf(review_nl,vectors)
        labels=clustering_word2vec(vectors)
        
     elif v=="gr":
@@ -236,7 +265,7 @@ for k,v in dict_f.iteritems():
     doc_path=glob.glob(prblm_path + '/*')
     doc_list_name=[]
     for i in doc_path:
-        m=i.split('\\')
+        m=i.split('/')
         m=m[-1]
         doc_list_name.append(m)
     i=0    
