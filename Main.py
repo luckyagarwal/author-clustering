@@ -5,30 +5,30 @@ Created on Tue Apr 10 12:30:18 2018
 """
 #main
 
-from __future__ import division, unicode_literals
-from sklearn import metrics
-from sklearn.metrics import r2_score
-from textblob import TextBlob as tb
-import numpy as np
-import sys
-import glob
-import codecs
-import json
-import os
-from nltk.tokenize  import word_tokenize
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.cluster import  KMeans
-from sklearn.cluster import AgglomerativeClustering
-import gensim
-import sortedcollections
-import numpy as np
-from sklearn.metrics.pairwise import cosine_similarity
-from itertools import combinations
-import itertools
-import math 
-from gensim.models import LogEntropyModel
-from gensim.test.utils import common_texts
-from gensim.corpora import Dictionary
+    from __future__ import division, unicode_literals
+    from sklearn import metrics
+    from sklearn.metrics import r2_score
+    from textblob import TextBlob as tb
+    import numpy as np
+    import sys
+    import glob
+    import codecs
+    import json
+    import os
+    from nltk.tokenize  import word_tokenize
+    from sklearn.feature_extraction.text import TfidfVectorizer
+    from sklearn.cluster import  KMeans
+    from sklearn.cluster import AgglomerativeClustering
+    import gensim
+    import sortedcollections
+    import numpy as np
+    from sklearn.metrics.pairwise import cosine_similarity
+    from itertools import combinations
+    import itertools
+    import math 
+    from gensim.models import LogEntropyModel
+    from gensim.test.utils import common_texts
+    from gensim.corpora import Dictionary
 
 def tf(word, blob):
     return blob.words.count(word) / len(blob.words)
@@ -61,6 +61,7 @@ def merge_prblm_docs(eval_dir,k):
         doc.append(text)
         f.close()  
     return doc
+
 def pre_process_w2v(doc):
     doc=[i.lower() for i in doc]
     x=0
@@ -118,33 +119,6 @@ def vec_fec(doc_bag,model,review_list):
     sen_vec=[i for i in sen_vec]    
     return sen_vec
     
-def clustering(list_problem):
-   
-   vectorizer = TfidfVectorizer(analyzer="char", tokenizer=None, preprocessor=None, stop_words=None,
-                                 max_features=5000,min_df=2,ngram_range=(2, 8))
-
-   data_features=vectorizer.fit_transform(list_problem)
-   data_features = data_features.toarray()
-   #spectral = KMeans(n_clusters=8).fit(data_features)
-   d={}    
-   for i in range(5,len(data_features)):
-       spectral = KMeans(n_clusters=i).fit(np.array(data_features))
-       #spectral = AgglomerativeClustering(n_clusters=i, linkage='ward').fit(np.array(data_features))
-       label = spectral.fit_predict(np.array(data_features))
-       score=metrics.calinski_harabaz_score((np.array(data_features)), label)
-       #score= metrics.silhouette_score(data_features, label, metric='euclidean')
-       d[i]=score
-   n_c=0   
-   for key,val in d.iteritems():
-       if(val==max(d.values())):
-           n_c=key
-           break
-   print n_c
-   spectral = KMeans(n_clusters=n_c).fit(np.array(data_features))
-   #spectral = AgglomerativeClustering(n_clusters=n_c, linkage='ward').fit(np.array(data_features))
-   label = spectral.fit_predict(np.array(data_features))
-   return data_features,label
-
 
 def clustering_word2vec(data_features):
     d={}    
@@ -207,6 +181,7 @@ def prod_output(eval_dir,out_dir,k,labels):
 
     json.dump(list_all_output, out_file, indent=4)
     return list_all_output   
+    
 def similarity_score(list_all, dict_features):
     list_all_comb = []
     for i in xrange(len(list_all)):
@@ -231,6 +206,7 @@ def similarity_score(list_all, dict_features):
         sim = cosine_similarity(vec1, vec2)
         all_sim.append(sim)
     return comb_list, all_sim
+
 def write_ranking(comb_list, all_sim, out_dir,k):
     list_all_output = []
     for i in xrange(len(comb_list)):
@@ -245,186 +221,9 @@ def write_ranking(comb_list, all_sim, out_dir,k):
 
     json.dump(list_all_output, out_file, indent=4)
     return list_all_output    
-def merge_word2_vec_Tfidf(review_en,vectors):
-     vectorizer = TfidfVectorizer(analyzer="char", tokenizer=None, preprocessor=None, stop_words=None,
-                                 max_features=5000, ngram_range=(2, 8))
-     data_features=vectorizer.fit_transform(review_en)
-     data_features=data_features.toarray()
-     for i,j  in zip(vectors,data_features):
-         i.extend(list(j))
+
      
-     return vectors   
-     
-def tfidf_weight_doc(review_list):
-    review_list=[tb(sentence) for sentence in review_list]
-    vector=[]
-    for i,blob in enumerate(review_list):
-        x=[]
-        for word in blob.words:
-            t=tfidf(word,blob,review_list)
-            x.append(t)
-        vector.append(x)  
-    length = len(sorted(vector,key=len, reverse=True)[0])
-    vector=np.array([xi+[0]*(length-len(xi)) for xi in vector])          
-    return vector   
-
-def log_entropy(doc):
-    doc=pre_process_w2v(doc)
-    doc_token=[i.split() for i in doc]
-    dct = Dictionary(doc_token)
-    corpus = [dct.doc2bow(row) for row in doc]
-    model = LogEntropyModel(corpus)
-    vec=[]    
-    for row in corpus:
-        vector = model[corpus[row]]
-        x=[]
-        for t in vector:
-            x.append(t[1])
-        vec.append(x)
-        
-    length = len(sorted(vec,key=len, reverse=True)[0])
-    vec=np.array([xi+[0]*(length-len(xi)) for xi in vec]) 
-    return vec    
-def affix_prefix(sen):
-   #affix:prefix
-    a_p=[]
-    sen=sen.strip('\n')
-    for i in sen.split():
-        if(len(i)>3):
-            a_p.append(i[0:3])
-    return a_p
-        
-def affix_suffix(sen):
-    #affix:suffix
-    a_s=[]            
-    sen=sen.strip('\n')
-    for i in sen.split():
-        if(len(i)>3):
-            a_s.append(i[-3:len(sen)])
-    return a_s            
-
-def affix_space_prefix(sen):    #affix:space-prefix(without preprocess doc_list)
-    a_s_p=[]            
-    count=0
-    temp=''
-    sen=sen.strip('\n')
-    for i in sen: 
-        if count!=len(sen)-1:
-            if i==' ' and sen[count+1].isalpha() and sen[count+2].isalpha():
-                temp='_'
-                temp=temp+sen[count+1]
-                temp=temp+sen[count+2]
-                #append
-                a_s_p.append(temp)
-                temp=''
-        count+=1
-    return a_s_p
-
-def affix_space_suffix(sen):        
-    #affix:space-suffix(without preproess doc list)
-    a_s_s=[]        
-    count=0
-    temp=''
-    sen=sen.strip('\n')
-    for i in sen: 
-        if count!=len(sen)-1:
-            if i==' 'and sen[count-1].isalpha() and sen[count-2].isalpha():
-                temp=temp+sen[count-2]
-                temp=temp+sen[count-1]
-                temp=temp+'_'
-                a_s_s.append(temp)
-                temp=''
-        count+=1    
-    return a_s_s    
-
-def punct_beg(sen):
-    #punct:beg-punct(without preprocess  doc list)        
-    p_b=[]        
-    count=0
-    temp=''
-    sen=sen.strip('\n')
-    for i in sen:
-        if count<len(sen)-2:
-            if (i.isalpha()==False and i!=' ')  and ((sen[count+1].isalpha())==True or (sen[count+1]==' ')):
-                temp=temp+i
-                if (sen[count+1].isalpha())==True:
-                    temp=temp+sen[count+1]
-                elif (sen[count+1]==' '):
-                    temp=temp+'_'
-            
-                temp=temp+sen[count+2]
-                p_b.append(temp)
-                temp=''
-        count+=1
-    return p_b
-
-def punct_mid(sen):    
-    #punct:mid-punct(without preprocess doc list)
-    p_m=[]
-    count=0
-    temp=''
-    sen=sen.strip('\n')
-    for i in sen:
-        if count!=len(sen)-1:
-            if (i.isalpha())==False and i!=' ':
-                if sen[count-1]==' ':
-                    temp=temp+'_'
-                else:
-                    temp=temp+sen[count-1]
-                
-                temp=temp+i
-                
-                if sen[count+1]==' ':
-                    temp=temp+'_'
-                else:
-                    temp=temp+sen[count+1]
-                p_m.append(temp)
-                temp=''
-        count+=1
-    return p_m            
-                
-def punct_end(sen):                    
-    #punct:end-punct(without preprocess doc list)
-    p_e=[]    
-    count=0
-    temp=''
-    sen=sen.strip('\n')
-    for i in sen:
-        if (i.isalpha()==False and i!=' ') and (sen[count-2].isalpha()==True) and (sen[count-1].isalpha()==True):
-            temp=temp+sen[count-2]
-            temp=temp+sen[count-1]
-            temp=temp+i
-            p_e.append(temp)
-            temp=''
-        count+=1
-    return p_e  
-#untyped character n grams
-def u_n_gram(sen):
-    u_n_gram=[]
-    sen=sen.strip('\n')
-    for i in range(3,8):
-        count=0
-        while(count<len(sen)-i):
-            u_n_gram.append(sen[count:count+i].replace(' ','_'))
-            count=count+i
-    return u_n_gram            
-            
-                  
-def n_grams(review_l,doc_l):
-    doc_n=[]
-    for review,doc in zip(review_l,doc_l):
-        n_gram=[]
-        n_gram.extend(affix_prefix(review))
-        n_gram.extend(affix_suffix(review))
-        n_gram.extend(affix_space_prefix(doc))
-        n_gram.extend(affix_space_suffix(doc))
-        n_gram.extend(punct_beg(doc))
-        n_gram.extend(punct_mid(doc))
-        n_gram.extend(punct_end(doc))
-        n_gram.extend(u_n_gram(doc))
-        
-        doc_n.append(n_gram)
-    return doc_n
+# the Below code is to check if the model has been loaded or not
 try:
     word1 = model1['bag']
     word2 = model2['slechte']
@@ -448,44 +247,22 @@ for k,v in dict_f.iteritems():
     if v=="en":
         review_en=pre_process_w2v(doc_list)
         review_en_new=stopwords_r(review_en,v)
-        #print review_en_new
-        #vectors,labels=clustering(doc_list)  #tfidf_ 1
         vectors=vec_fec(review_en_new,model1,review_en)
-       #vectors=merge_word2_vec_Tfidf(review_en,vectors)
-       #vectors=tfidf_weight_doc(review_en)
-       #vectors=[np.array(i) for i in vectors]
-       #vectors=np.array(vectors)
         labels=clustering_word2vec(vectors)
-        #print 
+        
        
     
     elif v=="nl":
-        review_nl=pre_process_w2v(doc_list)
-        #review_nl_new=stopwords_r(review_nl,v)
-        #print review_nl_new        
-        n_gram_list=n_grams(review_nl,doc_list)
-        vectors,labels=clustering(doc_list)        
-       #review_nl=pre_process_w2v(doc_list)
-       #vectors,labels=clustering(doc_list)
-       #review_nl_new=stopwords_r(review_nl,v)
-        #
-        #vectors=vec_fec(review_nl_new,model2,review_nl)
-       #vectors=merge_word2_vec_Tfidf(review_nl,vectors)
-       #vectors=tfidf_weight_doc(review_nl)
-        #labels=clustering_word2vec(vectors)
-        #print vectors
-        break    
+        review_nl=pre_process_w2v(doc_list)      
+        review_nl_new=stopwords_r(review_en,v)
+        vectors=vec_fec(review_nl_new,model2,review_nl)
+        labels=clustering_word2vec(vectors)
+         
     elif v=="gr":
         review_gr=pre_process_w2v(doc_list)
-        vectors,labels=clustering(doc_list)
-       #review_gr=pre_process_w2v(doc_list)
-       #vectors,labels=clustering(doc_list)
-        review_gr_new= [word_tokenize(i) for i in doc_list]
         vectors=vec_fec(review_gr_new,model3,review_gr)
-       #vectors=merge_word2_vec_Tfidf(review_gr,vectors)
-       #vectors=tfidf_weight_doc(review_gr)
         labels=clustering_word2vec(vectors)
-        #print vectors
+
     list_all=prod_output(eval_dir,out_dir,k,labels)  
 
     dict_features={}
